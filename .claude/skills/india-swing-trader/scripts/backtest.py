@@ -106,7 +106,8 @@ def build(raw):
     r2 = rsi(C, 2)
     sig["C"] = (C > sma200) & (r2 < 10)
     rank["C"] = -r2
-    return dict(cal=cal, stocks=stocks, O=O, H=H, L=L, C=C, atr=atr, sma5=sma5,
+    return dict(cal=cal, stocks=stocks, O=O, H=H, L=L, C=C, atr=atr, sma5=sma5, sma200=sma200,
+                mom=C / C.shift(126) - 1,
                 low10=L.rolling(10).min().shift(1), regime=regime, idx=idx,
                 sig=sig, rank=rank, stop_lvl=stop_lvl)
 
@@ -198,6 +199,49 @@ def simulate(d, strat, cfg, start, end):
     return eq, trades, invested / max(len(days), 1)
 
 
+def simulate_rotation(d, cfg, start, end):
+    """Strategy D: monthly momentum rotation (see references/strategies.md)."""
+    n, slip, cal = cfg["max_positions"], cfg["slippage_pct_per_side"] / 100, d["cal"]
+    days = np.where((cal >= start) & (cal < end))[0]
+    O, C, mom, s200, regime = (d[k].values for k in ("O", "C", "mom", "sma200", "regime"))
+    cash, pos, trades, curve, invested = float(cfg["starting_capital"]), {}, [], [], 0
+    for t in days:
+        y = t - 1
+        if cal[t].month != cal[y].month:  # first session of a month: act on month-end ranking
+            ok = (C[y] > s200[y]) & ~np.isnan(mom[y])
+            order = [j for j in np.argsort(-np.where(ok, mom[y], -np.inf)) if ok[j]]
+            keep = set(order[:2 * n])
+            for j in [j for j in pos if j not in keep and not np.isnan(O[t, j])]:
+                p = pos.pop(j)
+                px = O[t, j] * (1 - slip)
+                fee = charges(0, p["qty"] * px, cfg)
+                cash += p["qty"] * px - fee
+                pnl = p["qty"] * (px - p["entry"]) - fee - p["buy_fee"]
+                trades.append(dict(symbol=d["stocks"][j], entry_date=str(cal[p["t"]].date()),
+                                   exit_date=str(cal[t].date()), entry=round(p["entry"], 2),
+                                   exit=round(px, 2), qty=p["qty"], pnl=round(pnl, 2),
+                                   r=round(pnl / (p["qty"] * p["entry"]), 3),
+                                   fees=round(fee + p["buy_fee"], 2), reason="rotation"))
+            if regime[y]:
+                for j in order:
+                    free = n - len(pos)
+                    if free <= 0:
+                        break
+                    if j in pos or np.isnan(O[t, j]):
+                        continue
+                    entry = O[t, j] * (1 + slip)
+                    qty = int((cash / free - 20) // entry)
+                    if qty < 1:
+                        continue
+                    fee = charges(qty * entry, 0, cfg)
+                    cash -= qty * entry + fee
+                    pos[j] = dict(qty=qty, entry=entry, t=t, buy_fee=fee)
+        invested += bool(pos)
+        curve.append(cash + sum(p["qty"] * (C[t, j] if not np.isnan(C[t, j]) else p["entry"])
+                                for j, p in pos.items()))
+    return pd.Series(curve, index=cal[days]), trades, invested / max(len(days), 1)
+
+
 def stats(eq, trades, tim, idx, cfg):
     yrs = (eq.index[-1] - eq.index[0]).days / 365.25
     cagr = lambda s: (s.iloc[-1] / s.iloc[0]) ** (1 / yrs) - 1
@@ -231,11 +275,11 @@ def main():
     base, out, rows = load_config(), {}, []
     out["meta"] = dict(symbols=len(d["stocks"]), last_candle=str(d["cal"][-1].date()),
                        periods={"in_sample": [IS_START, OOS_START], "out_of_sample": [OOS_START, end]})
-    for strat in "ABC":
+    for strat in "ABCD":
         for n in (2, 3):
             cfg = copy.deepcopy(base); cfg["max_positions"] = n
             for name, (s, e) in out["meta"]["periods"].items():
-                eq, tr, tim = simulate(d, strat, cfg, s, e)
+                eq, tr, tim = simulate_rotation(d, cfg, s, e) if strat == "D" else simulate(d, strat, cfg, s, e)
                 st = stats(eq, tr, tim, d["idx"], cfg)
                 out[f"{strat}_{n}pos_{name}"] = dict(stats=st, trades=tr)
                 rows.append(dict(strategy=strat, positions=n, period=name, **st))

@@ -42,3 +42,17 @@ session's open. Shared rules:
 
 Parameters above are the starting values. Any change must be made before looking at
 out-of-sample results, and recorded in `trading/state.json` under `rule_changes`.
+
+## D. Monthly momentum rotation (low turnover)
+
+Added after A, B and C failed the backtest on costs. Different in kind: it is always close to
+fully invested, trades once a month, and has no per-trade stop, so the 1.5% risk-per-trade rule
+does not apply. Risk is controlled by the rotation rules and the account kill switches.
+
+- Signal day: last session of each month. Eligible: close above the stock's 200-day SMA.
+- Rank eligible stocks by 6-month (126-session) return, highest first.
+- First session of the next month, at the open: sell any holding no longer in the top 2N
+  (N = maximum positions). Then, only if the Nifty 50 market filter is on, fill empty slots
+  with the highest-ranked stocks not already held, splitting available cash equally.
+- Skip a stock if one share costs more than the slot's cash. Kept holdings are not resized.
+- In the trade log the `r` column for D is the trade's return as a fraction of position value.
