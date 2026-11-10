@@ -281,6 +281,7 @@ def stats(eq, trades, tim, idx, cfg):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true")
+    ap.add_argument("--positions", default="3,5", help="comma-separated max_positions values to test")
     ap.add_argument("--out", default=os.path.join(ROOT, "trading", "backtest_results.json"))
     args = ap.parse_args()
     d = build(load_prices(args.refresh))
@@ -290,7 +291,7 @@ def main():
     out["meta"] = dict(symbols=len(d["stocks"]), no_price_data=sorted(wanted - set(d["stocks"])), last_candle=str(d["cal"][-1].date()),
                        periods={"in_sample": [IS_START, OOS_START], "out_of_sample": [OOS_START, end]})
     for strat in "ABCD":
-        for n in (2, 3):
+        for n in [int(x) for x in args.positions.split(",")]:
             cfg = copy.deepcopy(base); cfg["max_positions"] = n
             for name, (s, e) in out["meta"]["periods"].items():
                 eq, tr, tim = simulate_rotation(d, cfg, s, e) if strat == "D" else simulate(d, strat, cfg, s, e)

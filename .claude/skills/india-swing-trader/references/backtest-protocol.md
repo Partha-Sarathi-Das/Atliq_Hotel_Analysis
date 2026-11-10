@@ -5,7 +5,7 @@
 - Data: daily OHLCV, at least 10 years, adjusted for splits and bonuses. Nifty 50 index for the
   market filter.
 - Split: in-sample up to 31 Dec 2022, out-of-sample from 1 Jan 2023. Tune only on in-sample.
-- Portfolio simulation, not per-stock: ₹10,000 start, maximum 3 positions, sizing identical to
+- Portfolio simulation, not per-stock: starting capital from `config.json`, position counts from `--positions`, sizing identical to
   `scripts/position_size.py` (import its functions), equity compounding.
 - Costs: charges from `config.json` on every trade plus slippage per side.
 - Report for each strategy, in-sample and out-of-sample separately: number of trades, win rate,
@@ -38,7 +38,7 @@ keep researching. Never raise risk limits to reach the goal.
 
 ## Going live
 
-- Same ₹10,000 limits. First month at half risk per trade (0.75%).
+- Same capital limits. First month at half risk per trade (0.75%).
 - After the first live trade, reconcile estimated charges with the contract note.
 
 ## Position-count comparison

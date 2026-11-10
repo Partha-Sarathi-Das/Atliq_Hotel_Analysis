@@ -1,6 +1,6 @@
 ---
 name: india-swing-trader
-description: Rule-based swing trading assistant for Indian equities (NSE, Nifty 100, delivery/CNC, long only) on a small account (starting capital ₹10,000). Use whenever the user asks to scan for swing trades, size a position, check open trades, review the trade journal, backtest or compare the candidate strategies, run paper trading, or move toward live or automated trading on NSE. Also use for "what should I buy/sell today", "run my trading routine", or any question about this trading plan's rules.
+description: Rule-based swing trading assistant for Indian equities (NSE, Nifty 100, delivery/CNC, long only) on a small account (starting capital ₹25,000). Use whenever the user asks to scan for swing trades, size a position, check open trades, review the trade journal, backtest or compare the candidate strategies, run paper trading, or move toward live or automated trading on NSE. Also use for "what should I buy/sell today", "run my trading routine", or any question about this trading plan's rules.
 ---
 
 # India Swing Trader
@@ -17,12 +17,12 @@ and places every trade.
 
 | Item | Value |
 |---|---|
-| Starting capital | ₹10,000 |
+| Starting capital | ₹25,000 (raised from ₹10,000 on 10 Nov 2026) |
 | Target | 2–3% per month on average (27–43% a year). A goal, not an expectation; losing months are normal |
 | Style | Swing, long only, delivery (CNC). No intraday, no F&O, no leverage, no averaging down |
 | Universe | Nifty 100 constituents |
 | Positions | Maximum 3 open at once, about one third of equity each |
-| Risk per trade | 1.5% of current equity (₹150 at ₹10,000) |
+| Risk per trade | 1.5% of current equity (₹375 at ₹25,000) |
 | Maximum drawdown | 20% from peak equity. Hitting it stops all trading |
 | Market filter | No new buys while Nifty 50 closes below its 200-day moving average |
 | Broker | Dhan (zero delivery brokerage; depository charge on each sell) |
@@ -31,6 +31,18 @@ and places every trade.
 
 All tunable numbers live in `config.json`. Read it at the start of every run and use its values
 rather than the ones in this table if they differ.
+
+## Current standing (read this first)
+
+As of 10 Nov 2026 no candidate strategy has passed the backtest, at ₹10,000 or ₹25,000. Until
+one does:
+
+- The user's real money goes into a low-cost Nifty 50 index fund or ETF, bought and held. This
+  is the agreed plan, not a fallback to apologise for.
+- Do not give stock buy or sell signals for real money. Research and paper work only.
+- New strategy ideas are added to `references/strategies.md` before testing, run through the
+  same protocol, and logged in `trading/state.json`. Count every idea tested; the more that are
+  tried on the same data, the less a single pass should be trusted.
 
 ## Phase gates
 
@@ -90,7 +102,7 @@ Always compute with the script, never by hand:
 
 ```
 python3 .claude/skills/india-swing-trader/scripts/position_size.py \
-  --equity 10000 --entry 1450 --stop 1390 --target 1570
+  --equity 25000 --entry 1450 --stop 1390 --target 1570
 ```
 
 It applies the 1.5% risk rule and the per-position cap, estimates charges for the configured
@@ -101,7 +113,7 @@ compare with the broker's contract note and correct them.
 
 ## Kill switches
 
-- Equity at or below 80% of peak equity (₹8,000 on ₹10,000): stop all trading. Review the
+- Equity at or below 80% of peak equity (₹20,000 on ₹25,000): stop all trading. Review the
   journal with the user before anything resumes.
 - Month-to-date loss of 6% of month-start equity: no new entries until next month.
 - Four losing trades in a row: halve risk per trade until two winners close.
@@ -127,7 +139,7 @@ If no source is reachable, say so and stop; do not estimate prices from memory.
 
 - Short-term gains on listed shares are taxed (short-term capital gains); net returns are after
   charges and before tax. Suggest keeping contract notes.
-- On ₹10,000, fixed charges per trade are a large share of each position, so fewer, better
+- On a small account, fixed charges per trade are a large share of each position, so fewer, better
   trades beat frequent ones.
 - A backtest that passes does not guarantee future results. Refresh
   `references/nifty100_history.json` after each NSE index review (March and September).
