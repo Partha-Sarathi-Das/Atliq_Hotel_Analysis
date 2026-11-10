@@ -18,8 +18,16 @@ sys.path.insert(0, HERE)
 from position_size import charges, load_config, size_trade  # noqa: E402
 
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", ".."))
-CACHE = os.path.join(ROOT, "trading", "data", "prices.pkl")
-START, IS_START, OOS_START = "2014-01-01", "2015-01-01", "2023-01-01"
+START, OOS_START = "2014-01-01", "2023-01-01"
+UNIVERSES = {  # history file, in-sample start, extra benchmark ticker
+    "nifty100": ("nifty100_history.json", "2015-01-01", None),
+    "midcap150": ("midcap150_history.json", "2017-01-01", "^NSEMDCP50"),
+}
+UNI = "nifty100"
+
+
+def cache_path():
+    return os.path.join(ROOT, "trading", "data", f"prices_{UNI}.pkl")
 
 
 def fetch_one(ticker, session):
@@ -54,29 +62,36 @@ def fetch_one(ticker, session):
 
 def load_history():
     """Point-in-time Nifty 100 membership: list of [effective_from, members], oldest first."""
-    with open(os.path.join(HERE, "..", "references", "nifty100_history.json")) as f:
+    with open(os.path.join(HERE, "..", "references", UNIVERSES[UNI][0])) as f:
         return json.load(f)["history"]
 
 
 def load_prices(refresh=False):
-    if os.path.exists(CACHE) and not refresh:
-        return pd.read_pickle(CACHE)
+    if os.path.exists(cache_path()) and not refresh:
+        return pd.read_pickle(cache_path())
     import requests
     session = requests.Session()
     session.headers["User-Agent"] = "Mozilla/5.0"
     syms = sorted({x for _, m in load_history() for x in m})
     frames, missing = {}, []
-    for t in [x + ".NS" for x in syms] + ["^NSEI"]:
+    for t in [x + ".NS" for x in syms] + ["^NSEI"] + [b for b in [UNIVERSES[UNI][2]] if b]:
         df = fetch_one(t, session)
         if df is None or df.empty:
             missing.append(t)
         else:
             frames[t] = df
+    import time
+    for t in list(missing):  # second pass: rate limits cause transient failures
+        time.sleep(1.5)
+        df = fetch_one(t, session)
+        if df is not None and not df.empty:
+            frames[t] = df
+            missing.remove(t)
     if missing:
         print("No data for:", ", ".join(missing), file=sys.stderr)
-    raw = pd.concat(frames, axis=1).swaplevel(axis=1).sort_index(axis=1)
-    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
-    raw.to_pickle(CACHE)
+    raw = pd.concat(frames, axis=1, sort=True).swaplevel(axis=1).sort_index(axis=1)
+    os.makedirs(os.path.dirname(cache_path()), exist_ok=True)
+    raw.to_pickle(cache_path())
     return raw
 
 
@@ -91,7 +106,7 @@ def build(raw):
     """Indicators and signals as date x symbol frames."""
     idx = raw["Close"]["^NSEI"].dropna()
     cal = idx.index
-    stocks = [c for c in raw["Close"].columns if c != "^NSEI" and raw["Close"][c].notna().sum() > 260]
+    stocks = [c for c in raw["Close"].columns if not c.startswith("^") and raw["Close"][c].notna().sum() > 260]
     O, H, L, C, V = (raw[k][stocks].reindex(cal) for k in ("Open", "High", "Low", "Close", "Volume"))
     pc = C.shift(1)
     tr = np.maximum(H - L, np.maximum((H - pc).abs(), (L - pc).abs()))
@@ -122,6 +137,7 @@ def build(raw):
     return dict(cal=cal, stocks=stocks, O=O, H=H, L=L, C=C, atr=atr, sma5=sma5, sma200=sma200, member=member,
                 mom=C / C.shift(126) - 1,
                 low10=L.rolling(10).min().shift(1), regime=regime, idx=idx,
+                bench2=raw["Close"][UNIVERSES[UNI][2]].reindex(cal).ffill() if UNIVERSES[UNI][2] else None,
                 sig=sig, rank=rank, stop_lvl=stop_lvl)
 
 
@@ -212,7 +228,7 @@ def simulate(d, strat, cfg, start, end):
     return eq, trades, invested / max(len(days), 1)
 
 
-def simulate_rotation(d, cfg, start, end):
+def simulate_rotation(d, cfg, start, end, exit_on_bear=False):
     """Strategy D: monthly momentum rotation (see references/strategies.md)."""
     n, slip, cal = cfg["max_positions"], cfg["slippage_pct_per_side"] / 100, d["cal"]
     days = np.where((cal >= start) & (cal < end))[0]
@@ -223,7 +239,7 @@ def simulate_rotation(d, cfg, start, end):
         if cal[t].month != cal[y].month:  # first session of a month: act on month-end ranking
             ok = (C[y] > s200[y]) & ~np.isnan(mom[y]) & member[y]
             order = [j for j in np.argsort(-np.where(ok, mom[y], -np.inf)) if ok[j]]
-            keep = set(order[:2 * n])
+            keep = set(order[:2 * n]) if (regime[y] or not exit_on_bear) else set()
             for j in [j for j in pos if j not in keep and not np.isnan(O[t, j])]:
                 p = pos.pop(j)
                 px = O[t, j] * (1 - slip)
@@ -255,7 +271,7 @@ def simulate_rotation(d, cfg, start, end):
     return pd.Series(curve, index=cal[days]), trades, invested / max(len(days), 1)
 
 
-def stats(eq, trades, tim, idx, cfg):
+def stats(eq, trades, tim, idx, cfg, bench2=None):
     yrs = (eq.index[-1] - eq.index[0]).days / 365.25
     cagr = lambda s: (s.iloc[-1] / s.iloc[0]) ** (1 / yrs) - 1
     dd = lambda s: (s / s.cummax() - 1).min()
@@ -265,6 +281,10 @@ def stats(eq, trades, tim, idx, cfg):
     w, l = pnl[pnl > 0], pnl[pnl <= 0]
     fees = sum(x["fees"] for x in trades)
     bh = idx.reindex(eq.index).ffill()
+    extra = {}
+    if bench2 is not None:
+        b2 = bench2.reindex(eq.index).ffill().dropna()
+        extra = dict(midcap50_cagr_pct=round(100 * cagr(b2), 1), midcap50_max_dd_pct=round(100 * dd(b2), 1))
     return dict(
         trades=len(trades), win_rate=round(100 * len(w) / max(len(pnl), 1), 1),
         avg_win_r=round(float(r[pnl > 0].mean()), 2) if len(w) else 0,
@@ -275,27 +295,33 @@ def stats(eq, trades, tim, idx, cfg):
         worst_month_pct=round(100 * m.min(), 1), months_positive_pct=round(100 * (m > 0).mean()),
         time_in_market_pct=round(100 * tim), fees_rs=round(fees),
         fees_pct_of_gross=round(100 * fees / (pnl.sum() + fees), 0) if pnl.sum() + fees > 0 else None,
-        nifty_cagr_pct=round(100 * cagr(bh), 1), nifty_max_dd_pct=round(100 * dd(bh), 1))
+        nifty_cagr_pct=round(100 * cagr(bh), 1), nifty_max_dd_pct=round(100 * dd(bh), 1), **extra)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument("--positions", default="3,5", help="comma-separated max_positions values to test")
-    ap.add_argument("--out", default=os.path.join(ROOT, "trading", "backtest_results.json"))
+    ap.add_argument("--strategies", default="ABCDE")
+    ap.add_argument("--universe", default="nifty100", choices=list(UNIVERSES))
+    ap.add_argument("--out")
     args = ap.parse_args()
+    global UNI
+    UNI = args.universe
+    args.out = args.out or os.path.join(ROOT, "trading", f"backtest_results_{UNI}.json")
+    IS_START = UNIVERSES[UNI][1]
     d = build(load_prices(args.refresh))
     end = str((d["cal"][-1] + pd.Timedelta(days=1)).date())
     base, out, rows = load_config(), {}, []
     wanted = {x + ".NS" for _, m in load_history() for x in m}
-    out["meta"] = dict(symbols=len(d["stocks"]), no_price_data=sorted(wanted - set(d["stocks"])), last_candle=str(d["cal"][-1].date()),
+    out["meta"] = dict(universe=UNI, capital=base["starting_capital"], symbols=len(d["stocks"]), no_price_data=sorted(wanted - set(d["stocks"])), last_candle=str(d["cal"][-1].date()),
                        periods={"in_sample": [IS_START, OOS_START], "out_of_sample": [OOS_START, end]})
-    for strat in "ABCD":
+    for strat in args.strategies:
         for n in [int(x) for x in args.positions.split(",")]:
             cfg = copy.deepcopy(base); cfg["max_positions"] = n
             for name, (s, e) in out["meta"]["periods"].items():
-                eq, tr, tim = simulate_rotation(d, cfg, s, e) if strat == "D" else simulate(d, strat, cfg, s, e)
-                st = stats(eq, tr, tim, d["idx"], cfg)
+                eq, tr, tim = simulate_rotation(d, cfg, s, e, exit_on_bear=(strat == "E")) if strat in "DE" else simulate(d, strat, cfg, s, e)
+                st = stats(eq, tr, tim, d["idx"], cfg, d["bench2"])
                 out[f"{strat}_{n}pos_{name}"] = dict(stats=st, trades=tr)
                 rows.append(dict(strategy=strat, positions=n, period=name, **st))
     json.dump(out, open(args.out, "w"), indent=1)

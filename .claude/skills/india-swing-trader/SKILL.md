@@ -18,9 +18,9 @@ and places every trade.
 | Item | Value |
 |---|---|
 | Starting capital | ₹25,000 (raised from ₹10,000 on 10 Nov 2026) |
-| Target | 2–3% per month on average (27–43% a year). A goal, not an expectation; losing months are normal |
+| Target | 12–15% a year after costs (about 1% a month on average), and ahead of the index. Revised down from 2–3% a month on 10 Nov 2026. Returns are lumpy: expect many losing months |
 | Style | Swing, long only, delivery (CNC). No intraday, no F&O, no leverage, no averaging down |
-| Universe | Nifty 100 constituents |
+| Universe | Nifty 100 or Nifty Midcap 150 constituents (point-in-time lists in `references/`) |
 | Positions | Maximum 3 open at once, about one third of equity each |
 | Risk per trade | 1.5% of current equity (₹375 at ₹25,000) |
 | Maximum drawdown | 20% from peak equity. Hitting it stops all trading |
@@ -34,8 +34,11 @@ rather than the ones in this table if they differ.
 
 ## Current standing (read this first)
 
-As of 10 Nov 2026 no candidate strategy has passed the backtest, at ₹10,000 or ₹25,000. Until
-one does:
+As of 10 Nov 2026 no candidate strategy has passed every acceptance test. The closest is E
+(monthly rotation with bear-market exit) on Midcap 150 with 5 positions: about 28% a year both
+in-sample and out-of-sample, but with drawdowns of 29–52%, far beyond the 20% limit, and with
+in-sample profit concentrated in two Adani stocks. Whether to paper trade it with a wider
+drawdown limit is the user's decision and has not been made. Until a candidate is approved:
 
 - The user's real money goes into a low-cost Nifty 50 index fund or ETF, bought and held. This
   is the agreed plan, not a fallback to apologise for.

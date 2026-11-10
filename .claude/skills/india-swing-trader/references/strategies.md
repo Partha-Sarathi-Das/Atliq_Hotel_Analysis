@@ -56,3 +56,14 @@ does not apply. Risk is controlled by the rotation rules and the account kill sw
   with the highest-ranked stocks not already held, splitting available cash equally.
 - Skip a stock if one share costs more than the slot's cash. Kept holdings are not resized.
 - In the trade log the `r` column for D is the trade's return as a fraction of position value.
+
+## E. Monthly rotation with bear-market exit
+
+Identical to D, except that when the Nifty 50 market filter is off on the signal day, every
+holding is sold at the next open and the account stays in cash until the filter turns on again.
+Added to cut D's drawdowns; expect lower returns and more trades than D.
+
+## Universes
+
+Each candidate can be run on `nifty100` or `midcap150` (`--universe`). Midcap 150 membership
+history is approximate and reliable from September 2016, so midcap tests start in 2017.
