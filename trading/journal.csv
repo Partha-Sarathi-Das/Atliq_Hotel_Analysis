@@ -1,0 +1,1 @@
+trade_id,mode,strategy,symbol,signal_date,entry_date,entry_price,qty,stop,target,exit_date,exit_price,exit_reason,charges,net_pnl,r_multiple,notes
