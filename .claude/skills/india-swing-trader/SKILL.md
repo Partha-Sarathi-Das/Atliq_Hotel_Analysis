@@ -25,7 +25,7 @@ and places every trade.
 | Risk per trade | 1.5% of current equity (₹150 at ₹10,000) |
 | Maximum drawdown | 20% from peak equity. Hitting it stops all trading |
 | Market filter | No new buys while Nifty 50 closes below its 200-day moving average |
-| Broker | Discount broker (Angel One or Dhan; not yet confirmed) |
+| Broker | Dhan (zero delivery brokerage; depository charge on each sell) |
 | Experience | Has invested, has never traded. Explain terms the first time they appear |
 | Availability | Most of market hours, but signals are end-of-day only |
 

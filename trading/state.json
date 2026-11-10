@@ -1,6 +1,13 @@
 {
-  "phase": "design",
+  "phase": "backtest",
   "active_strategy": null,
   "peak_equity": 10000,
-  "rule_changes": []
+  "rule_changes": [],
+  "backtest_log": [
+    {
+      "date": "2026-11-10",
+      "result": "No candidate passed. Best out-of-sample: B (breakout) with 3 positions, profit factor 1.30, CAGR 8.4%, max drawdown 21.4%, and it lost money in-sample. A is roughly break-even after costs; C loses heavily.",
+      "details": "trading/backtest_results.json"
+    }
+  ]
 }
