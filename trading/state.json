@@ -18,6 +18,11 @@
       "date": "2026-11-10",
       "result": "D (monthly momentum rotation) failed. Out-of-sample CAGR 2-3% with a 55% drawdown. In-sample CAGR above 50% is not credible: about 70% of the profit came from two Adani stocks that were not Nifty 100 members at the time (survivorship bias).",
       "details": "trading/backtest_results.json"
+    },
+    {
+      "date": "2026-11-10",
+      "result": "Retest with point-in-time Nifty 100 membership (rebuilt from NSE Indices press releases, 2013 onward). All four candidates fail. D in-sample falls from about 52% to 7-9% a year, below Nifty 50 buy-and-hold, with a 51% drawdown. 15 of 189 historical members have no price data (mostly merged or delisted).",
+      "details": "trading/backtest_results.json"
     }
   ]
 }

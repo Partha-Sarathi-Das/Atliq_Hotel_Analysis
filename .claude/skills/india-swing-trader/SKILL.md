@@ -129,5 +129,5 @@ If no source is reachable, say so and stop; do not estimate prices from memory.
   charges and before tax. Suggest keeping contract notes.
 - On ₹10,000, fixed charges per trade are a large share of each position, so fewer, better
   trades beat frequent ones.
-- A backtest that passes does not guarantee future results. Constituent lists change, so tests
-  on today's Nifty 100 members overstate past performance.
+- A backtest that passes does not guarantee future results. Refresh
+  `references/nifty100_history.json` after each NSE index review (March and September).

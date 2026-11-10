@@ -52,13 +52,19 @@ def fetch_one(ticker, session):
     return df[~df.index.duplicated(keep="last")]
 
 
+def load_history():
+    """Point-in-time Nifty 100 membership: list of [effective_from, members], oldest first."""
+    with open(os.path.join(HERE, "..", "references", "nifty100_history.json")) as f:
+        return json.load(f)["history"]
+
+
 def load_prices(refresh=False):
     if os.path.exists(CACHE) and not refresh:
         return pd.read_pickle(CACHE)
     import requests
     session = requests.Session()
     session.headers["User-Agent"] = "Mozilla/5.0"
-    syms = open(os.path.join(HERE, "..", "references", "nifty100.txt")).read().split()
+    syms = sorted({x for _, m in load_history() for x in m})
     frames, missing = {}, []
     for t in [x + ".NS" for x in syms] + ["^NSEI"]:
         df = fetch_one(t, session)
@@ -95,6 +101,12 @@ def build(raw):
     ema20 = C.ewm(span=20, adjust=False, min_periods=20).mean()
     regime = (idx > idx.rolling(200).mean()).reindex(cal).fillna(False)
 
+    member = pd.DataFrame(False, index=cal, columns=stocks)
+    hist = load_history()
+    for k, (start, names) in enumerate(hist):
+        stop = pd.Timestamp(hist[k + 1][0]) if k + 1 < len(hist) else cal[-1] + pd.Timedelta(days=1)
+        rows = (cal >= pd.Timestamp(start)) & (cal < stop)
+        member.loc[rows, [n + ".NS" for n in names if n + ".NS" in member.columns]] = True
     sig, rank, stop_lvl = {}, {}, {}
     near = (L <= ema20 * 1.01).astype(float).rolling(3).max() > 0
     sig["A"] = (C > sma50) & (sma50 > sma200) & near & (C > H.shift(1)) & (C > ema20)
@@ -105,8 +117,9 @@ def build(raw):
     rank["B"] = volr
     r2 = rsi(C, 2)
     sig["C"] = (C > sma200) & (r2 < 10)
+    sig = {k: v & member for k, v in sig.items()}
     rank["C"] = -r2
-    return dict(cal=cal, stocks=stocks, O=O, H=H, L=L, C=C, atr=atr, sma5=sma5, sma200=sma200,
+    return dict(cal=cal, stocks=stocks, O=O, H=H, L=L, C=C, atr=atr, sma5=sma5, sma200=sma200, member=member,
                 mom=C / C.shift(126) - 1,
                 low10=L.rolling(10).min().shift(1), regime=regime, idx=idx,
                 sig=sig, rank=rank, stop_lvl=stop_lvl)
@@ -203,12 +216,12 @@ def simulate_rotation(d, cfg, start, end):
     """Strategy D: monthly momentum rotation (see references/strategies.md)."""
     n, slip, cal = cfg["max_positions"], cfg["slippage_pct_per_side"] / 100, d["cal"]
     days = np.where((cal >= start) & (cal < end))[0]
-    O, C, mom, s200, regime = (d[k].values for k in ("O", "C", "mom", "sma200", "regime"))
+    O, C, mom, s200, regime, member = (d[k].values for k in ("O", "C", "mom", "sma200", "regime", "member"))
     cash, pos, trades, curve, invested = float(cfg["starting_capital"]), {}, [], [], 0
     for t in days:
         y = t - 1
         if cal[t].month != cal[y].month:  # first session of a month: act on month-end ranking
-            ok = (C[y] > s200[y]) & ~np.isnan(mom[y])
+            ok = (C[y] > s200[y]) & ~np.isnan(mom[y]) & member[y]
             order = [j for j in np.argsort(-np.where(ok, mom[y], -np.inf)) if ok[j]]
             keep = set(order[:2 * n])
             for j in [j for j in pos if j not in keep and not np.isnan(O[t, j])]:
@@ -273,7 +286,8 @@ def main():
     d = build(load_prices(args.refresh))
     end = str((d["cal"][-1] + pd.Timedelta(days=1)).date())
     base, out, rows = load_config(), {}, []
-    out["meta"] = dict(symbols=len(d["stocks"]), last_candle=str(d["cal"][-1].date()),
+    wanted = {x + ".NS" for _, m in load_history() for x in m}
+    out["meta"] = dict(symbols=len(d["stocks"]), no_price_data=sorted(wanted - set(d["stocks"])), last_candle=str(d["cal"][-1].date()),
                        periods={"in_sample": [IS_START, OOS_START], "out_of_sample": [OOS_START, end]})
     for strat in "ABCD":
         for n in (2, 3):

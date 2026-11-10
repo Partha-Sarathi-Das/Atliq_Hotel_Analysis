@@ -12,7 +12,9 @@
   average win and loss in R, profit factor, CAGR, maximum drawdown, worst month, percent of
   months positive, average monthly return, time in market, total charges as a share of gross
   profit. Compare against buy-and-hold Nifty 50 over the same period.
-- State the survivorship-bias caveat: today's index members are used for past years.
+- Universe is point-in-time: a stock can only be bought while it was a Nifty 100 member
+  (`references/nifty100_history.json`). Members that later merged or delisted may lack price
+  data; report how many.
 
 ### Acceptance tests (all must pass, out-of-sample)
 
