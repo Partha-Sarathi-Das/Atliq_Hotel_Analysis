@@ -34,18 +34,44 @@ rather than the ones in this table if they differ.
 
 ## Current standing (read this first)
 
-As of 10 Nov 2026 no candidate strategy has passed every acceptance test. The closest is E
-(monthly rotation with bear-market exit) on Midcap 150 with 5 positions: about 28% a year both
-in-sample and out-of-sample, but with drawdowns of 29–52%, far beyond the 20% limit, and with
-in-sample profit concentrated in two Adani stocks. Whether to paper trade it with a wider
-drawdown limit is the user's decision and has not been made. Until a candidate is approved:
+Decided 10 Nov 2026:
 
-- The user's real money goes into a low-cost Nifty 50 index fund or ETF, bought and held. This
-  is the agreed plan, not a fallback to apologise for.
-- Do not give stock buy or sell signals for real money. Research and paper work only.
-- New strategy ideas are added to `references/strategies.md` before testing, run through the
-  same protocol, and logged in `trading/state.json`. Count every idea tested; the more that are
-  tried on the same data, the less a single pass should be trusted.
+- **Half the capital (₹12,500) goes into a Nifty 50 index fund or ETF**, bought and held by the
+  user. This is real money and is not managed by this skill.
+- **The other ₹12,500 is paper traded** with strategy E (monthly rotation with bear-market
+  exit) on Nifty Midcap 150, 5 positions. No real money goes into E until the paper phase
+  passes and the user confirms.
+- E passed the return tests but **failed the 20% drawdown test** (29–52% in backtests). The
+  split is how the user chose to live with that; say so whenever results are discussed, and
+  plan on 12–15% a year, not the backtest's 28%.
+- Do not give stock buy or sell signals for real money. Strategies A, B and C failed on both
+  universes and are not to be traded.
+- New ideas go into `references/strategies.md` before testing, run through the same protocol,
+  and are logged in `trading/state.json`. Six rule sets have been tested so far; each extra
+  one makes a lucky pass more likely.
+
+## Monthly routine (strategy E, paper phase)
+
+Run after the close on the last trading day of each month, or any day after it.
+
+1. Read `trading/state.json` (`paper` block: cash and holdings) and `trading/journal.csv`.
+2. Run the signal script with the current paper state:
+   ```
+   python3 .claude/skills/india-swing-trader/scripts/rotation_signal.py \
+     --capital <paper equity> --cash <paper cash> --held SYM1,SYM2 --refresh
+   ```
+3. Report: market filter (Nifty 50 close against its 200-day average), sells, keeps, buys with
+   quantity and price, and cash left. If the filter is off, the instruction is "sell everything,
+   hold cash"; that is a valid month, not a failure.
+4. Record paper fills at the action day's open (the script uses it once that session exists),
+   append closed trades to the journal with `mode` = `paper` and `strategy` = `E`, and update
+   the `paper` block in the state file.
+5. Report paper equity, drawdown from peak, and the comparison with the Nifty Midcap 50 since
+   the paper start.
+
+Paper phase for E: at least 6 monthly rebalances, including at least 3 with the filter on, with
+every signal followed exactly. Rotation trades too rarely for a short paper run to prove the
+edge; this phase checks the process and the user's tolerance for the swings.
 
 ## Phase gates
 
@@ -68,7 +94,7 @@ exit test for the current phase passed and the user confirmed the move.
    request, their own API credentials, and compliance with the broker's API and SEBI
    retail-algo rules at that time.
 
-## Daily routine (paper and live phases)
+## Daily routine (swing strategies A–C; not in use)
 
 Run after the market closes (3:30 PM IST), using completed daily candles only.
 

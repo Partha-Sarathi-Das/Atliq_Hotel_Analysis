@@ -303,6 +303,7 @@ def main():
     ap.add_argument("--refresh", action="store_true")
     ap.add_argument("--positions", default="3,5", help="comma-separated max_positions values to test")
     ap.add_argument("--strategies", default="ABCDE")
+    ap.add_argument("--capital", type=float, help="override starting_capital from config.json")
     ap.add_argument("--universe", default="nifty100", choices=list(UNIVERSES))
     ap.add_argument("--out")
     args = ap.parse_args()
@@ -313,6 +314,8 @@ def main():
     d = build(load_prices(args.refresh))
     end = str((d["cal"][-1] + pd.Timedelta(days=1)).date())
     base, out, rows = load_config(), {}, []
+    if args.capital:
+        base["starting_capital"] = args.capital
     wanted = {x + ".NS" for _, m in load_history() for x in m}
     out["meta"] = dict(universe=UNI, capital=base["starting_capital"], symbols=len(d["stocks"]), no_price_data=sorted(wanted - set(d["stocks"])), last_candle=str(d["cal"][-1].date()),
                        periods={"in_sample": [IS_START, OOS_START], "out_of_sample": [OOS_START, end]})

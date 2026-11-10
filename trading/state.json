@@ -1,6 +1,10 @@
 {
-  "phase": "backtest",
-  "active_strategy": null,
+  "phase": "paper",
+  "active_strategy": {
+    "name": "E",
+    "universe": "midcap150",
+    "positions": 5
+  },
   "peak_equity": 25000,
   "rule_changes": [
     {
@@ -14,6 +18,10 @@
     {
       "date": "2026-11-10",
       "change": "Return target lowered to 12-15% a year. Added Midcap 150 universe and candidate E (rotation with bear-market exit)."
+    },
+    {
+      "date": "2026-11-10",
+      "change": "User chose to split capital: half index fund (real), half paper trading strategy E on Midcap 150 despite E failing the 20% drawdown test."
     }
   ],
   "backtest_log": [
@@ -43,5 +51,24 @@
       "details": "trading/backtest_results_midcap150.json"
     }
   ],
-  "live_plan": "Nifty 50 index fund or ETF, buy and hold. No active strategy approved."
+  "live_plan": "Half the capital (12,500) in a Nifty 50 index fund or ETF, buy and hold, managed by the user.",
+  "paper": {
+    "start_date": "2026-11-10",
+    "capital": 12500,
+    "cash": 12500,
+    "peak_equity": 12500,
+    "holdings": [],
+    "next_signal_date": "2026-11-30",
+    "next_action_date": "2026-12-01",
+    "log": [
+      {
+        "signal_date": "2026-10-30",
+        "action_date": "2026-11-02",
+        "market_filter_on": false,
+        "nifty_close": 23053.1,
+        "nifty_sma200": 24041.2,
+        "action": "No buys. Hold cash."
+      }
+    ]
+  }
 }
