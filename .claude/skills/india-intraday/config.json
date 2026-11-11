@@ -1,0 +1,25 @@
+{
+  "capital": 25000,
+  "leverage": 1,
+  "max_positions": 3,
+  "max_trades_per_day": 3,
+  "risk_per_trade_pct": 1.0,
+  "daily_loss_limit_pct": 3.0,
+  "min_stop_pct": 0.4,
+  "target_r": 2.0,
+  "min_reward_to_risk_after_costs": 1.5,
+  "entry_window": ["09:30", "11:05"],
+  "flat_by": "15:15",
+  "slippage_pct": {"nifty100": 0.05, "midcap150": 0.10},
+  "charges": {
+    "broker": "Dhan intraday (MIS)",
+    "brokerage_pct": 0.03,
+    "brokerage_cap_rs": 20,
+    "stt_sell_pct": 0.025,
+    "exchange_txn_pct": 0.00297,
+    "sebi_pct": 0.0001,
+    "stamp_buy_pct": 0.003,
+    "gst_pct": 18
+  },
+  "_note": "Dhan intraday: Rs 20 or 0.03% per order, whichever is lower; no DP charge. Statutory rates are estimates; check against a contract note. Leverage 1 means no MIS margin is used."
+}

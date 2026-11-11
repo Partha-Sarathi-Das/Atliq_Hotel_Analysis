@@ -22,6 +22,10 @@
     {
       "date": "2026-11-10",
       "change": "User chose to split capital: half index fund (real), half paper trading strategy E on Midcap 150 despite E failing the 20% drawdown test."
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Added india-intraday skill (NSE adaptation of the US day-trader-skill pack). Research only; not approved for trading."
     }
   ],
   "backtest_log": [
@@ -49,6 +53,69 @@
       "date": "2026-11-10",
       "result": "Midcap 150, 25,000, 2017 onward. A, B, C fail. D and E (monthly rotation) beat the Midcap 50 index in both periods; E with 5 positions: 28.3% a year in-sample (drawdown 52%), 27.7% out-of-sample (drawdown 29%). Fails the 20% drawdown test. 32 of 365 historical members lack price data. Six rule sets tested so far across two universes.",
       "details": "trading/backtest_results_midcap150.json"
+    },
+    {
+      "date": "2026-11-11",
+      "result": "Intraday opening-range breakout (rule sets 7 ORB15 and 8 ORB60, pre-registered in .claude/skills/india-intraday/references/rules.md) fails on Nifty 100 and Midcap 150. ORB60 out-of-sample profit factor 0.56 (Nifty 100) and 0.65 (Midcap 150), losing about 37-41% a year; roughly break-even before charges and slippage. ORB15 60-session check: profit factor 0.68 and 0.92.",
+      "summary": {
+        "orb60_nifty100": {
+          "in_sample": {
+            "trades": 1160,
+            "win_rate": 38.6,
+            "profit_factor": 0.68,
+            "cagr_pct": -31.5,
+            "max_dd_pct": -48.7,
+            "bench_cagr_pct": 17.2
+          },
+          "out_of_sample": {
+            "trades": 988,
+            "win_rate": 35.7,
+            "profit_factor": 0.56,
+            "cagr_pct": -37.2,
+            "max_dd_pct": -49.4,
+            "bench_cagr_pct": -1.4
+          }
+        },
+        "orb60_midcap150": {
+          "in_sample": {
+            "trades": 1155,
+            "win_rate": 35.7,
+            "profit_factor": 0.61,
+            "cagr_pct": -47.8,
+            "max_dd_pct": -65.0,
+            "bench_cagr_pct": 23.9
+          },
+          "out_of_sample": {
+            "trades": 997,
+            "win_rate": 36.7,
+            "profit_factor": 0.65,
+            "cagr_pct": -41.0,
+            "max_dd_pct": -52.9,
+            "bench_cagr_pct": 3.2
+          }
+        },
+        "orb15_nifty100": {
+          "check": {
+            "trades": 178,
+            "win_rate": 38.2,
+            "profit_factor": 0.68,
+            "cagr_pct": -32.2,
+            "max_dd_pct": -12.7,
+            "bench_cagr_pct": 11.5
+          }
+        },
+        "orb15_midcap150": {
+          "check": {
+            "trades": 178,
+            "win_rate": 41.6,
+            "profit_factor": 0.92,
+            "cagr_pct": -11.3,
+            "max_dd_pct": -11.9,
+            "bench_cagr_pct": -17.0
+          }
+        }
+      },
+      "details": "trading/intraday/"
     }
   ],
   "live_plan": "Half the capital (12,500) in a Nifty 50 index fund or ETF, buy and hold, managed by the user.",
