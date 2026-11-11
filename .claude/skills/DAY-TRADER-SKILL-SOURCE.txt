@@ -1,4 +1,0 @@
-Source: https://github.com/jakeschincariol/day-trader-skill
-Commit: 3d0f4ef (2026-10-20), version 2.0.0
-Copied: the eleven trader-* skill folders, unmodified. Tests and plugin manifest not copied.
-License: MIT, see DAY-TRADER-SKILL-LICENSE.

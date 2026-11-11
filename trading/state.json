@@ -26,6 +26,10 @@
     {
       "date": "2026-11-11",
       "change": "Added india-intraday skill (NSE adaptation of the US day-trader-skill pack). Research only; not approved for trading."
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Removed the US day-trader-skill pack (trader-* skills); india-intraday replaces it for NSE."
     }
   ],
   "backtest_log": [

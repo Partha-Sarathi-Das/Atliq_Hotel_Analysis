@@ -1,11 +1,12 @@
 ---
 name: india-intraday
-description: NSE intraday (day-trading) research tools for Indian stocks, adapted from the US day-trader-skill pack - opening-range breakout scan on NSE 5-minute bars in IST, a pre-trade check that sizes the position and applies Dhan intraday charges and the risk limits, a 10,000-path replay of a planned trade, and a backtest of the opening-range rules on Nifty 100 or Midcap 150. Use for any intraday or day-trading question about NSE stocks, such as "scan NSE for opening range breakouts", "check this intraday trade", "replay this trade", "backtest ORB on Indian stocks", or "is this day trade worth taking". For US stocks use the trader-* skills instead; for swing or monthly trading use india-swing-trader.
+description: NSE intraday (day-trading) research tools for Indian stocks, adapted from the US day-trader-skill pack - opening-range breakout scan on NSE 5-minute bars in IST, a pre-trade check that sizes the position and applies Dhan intraday charges and the risk limits, a 10,000-path replay of a planned trade, and a backtest of the opening-range rules on Nifty 100 or Midcap 150. Use for any intraday or day-trading question about NSE stocks, such as "scan NSE for opening range breakouts", "check this intraday trade", "replay this trade", "backtest ORB on Indian stocks", or "is this day trade worth taking". For swing or monthly trading use india-swing-trader.
 ---
 
 # India Intraday
 
-Opening-range breakout (ORB) tools for NSE, adapted from the US `trader-*` pack: its scanner,
+Opening-range breakout (ORB) tools for NSE, adapted from the US day-trader-skill pack (github.com/jakeschincariol/day-trader-skill,
+MIT, commit 3d0f4ef; no longer installed here): its scanner,
 entry timer, exit planner, time machine, budget manager and risk manager, rebuilt for NSE hours
 (09:15–15:30 IST), `.NS` symbols, point-in-time Nifty index membership and Dhan's intraday
 (MIS) charges. Long only, no margin, nothing held overnight. **Nothing here places orders.**
